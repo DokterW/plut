@@ -54,9 +54,9 @@ if [[ "$PLUTNET" = "elma" ]]; then
     else
         echo "$PLUTNAM v$PLUTVER"
         echo ""
-        echo "elma search 0192:987654321"
+        echo "elma search 987654321"
         echo "elma search Company Name"
-        echo "elma check 0192:987654321"
+        echo "elma check 987654321"
     fi
 elif [[ "$PLUTNET" = "dir" ]]; then
     if [[ "$PLUTOPT" = "lookup" ]] && [[ -n $PLUTSRC ]]; then
