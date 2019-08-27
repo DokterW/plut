@@ -1,12 +1,12 @@
 #!/bin/bash
-# plut v0.2
+# plut v0.3
 # Made by Dr. Waldijk
 # PEPPOL Look-Up Tool.
 # Read the README.md for more info.
 # By running this script you agree to the license terms.
 # Config ----------------------------------------------------------------------------
 PLUTNAM="plut"
-PLUTVER="0.2"
+PLUTVER="0.3"
 PLUTNET=$1
 PLUTOPT=$2
 PLUTSRC="$3 $4 $5 $6 $7 $8 $9"
@@ -51,11 +51,11 @@ if [[ "$PLUTNET" = "elma" ]]; then
         PLUTFIL=$PLUTSRC
         PLUTCHK=$(echo $PLUTFIL | grep csv)
         PLUTCNT=0
-        PLUTLIN=$(echo "$PLUTFIL" | tr ',' '\n' | wc -l)
+        PLUTLIN=$(cat $PLUTFIL | tr ',' '\n' | wc -l)
         if [[ -n "$PLUTCHK" ]]; then
             until [[ "$PLUTCNT" = "$PLUTLIN" ]]; do
                 PLUTCNT=$(expr $PLUTCNT + 1)
-                PLUTSRC=$(echo "$PLUTFIL" | cut -d , -f $PLUTCNT)
+                PLUTSRC=$(cat $PLUTFIL | cut -d , -f $PLUTCNT)
                 PLUTAPI=$(curl -s "https://hotell.difi.no/api/json/difi/elma/participants?query=$PLUTSRC")
                 PLUTRST=$(echo "$PLUTAPI" | jq -r '.posts')
                 if [[ "$PLUTRST" = "0" ]]; then
@@ -112,11 +112,11 @@ elif [[ "$PLUTNET" = "dir" ]]; then
         PLUTFIL=$PLUTSRC
         PLUTCHK=$(echo $PLUTFIL | grep csv)
         PLUTCNT=0
-        PLUTLIN=$(echo "$PLUTFIL" | tr ',' '\n' | wc -l)
+        PLUTLIN=$(cat $PLUTFIL | tr ',' '\n' | wc -l)
         if [[ -n "$PLUTCHK" ]]; then
             until [[ "$PLUTCNT" = "$PLUTLIN" ]]; do
                 PLUTCNT=$(expr $PLUTCNT + 1)
-                PLUTSRC=$(echo "$PLUTFIL" | cut -d , -f $PLUTCNT)
+                PLUTSRC=$(cat $PLUTFIL | cut -d , -f $PLUTCNT)
                 PLUTAPI=$(curl -s "https://directory.peppol.eu/search/1.0/json?participant=iso6523-actorid-upis::$PLUTSRC")
                 PLUTRST=$(echo "$PLUTAPI" | jq -r '."total-result-count"')
                 if [[ "$PLUTRST" = "0" ]]; then
