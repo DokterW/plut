@@ -1,20 +1,20 @@
 #!/bin/bash
-# plut v0.3
+# plut v0.4
 # Made by Dr. Waldijk
 # PEPPOL Look-Up Tool.
 # Read the README.md for more info.
 # By running this script you agree to the license terms.
 # Config ----------------------------------------------------------------------------
 PLUTNAM="plut"
-PLUTVER="0.3"
+PLUTVER="0.4"
 PLUTNET=$1
 PLUTOPT=$2
 PLUTSRC="$3 $4 $5 $6 $7 $8 $9"
 PLUTSRC=$(echo $PLUTSRC | sed -r 's/ /%20/g')
 # Functions -------------------------------------------------------------------------
 # -----------------------------------------------------------------------------------
-if [[ "$PLUTNET" = "elma" ]]; then
-    if [[ "$PLUTOPT" = "search" ]] && [[ -n $PLUTSRC ]]; then
+if [[ "$PLUTNET" = "elma" ]] || [[ "$PLUTNET" = "e" ]]; then
+    if [[ "$PLUTOPT" = "search" ]] || [[ "$PLUTOPT" = "s" ]] && [[ -n $PLUTSRC ]]; then
         PLUTAPI=$(curl -s "https://hotell.difi.no/api/json/difi/elma/participants?query=$PLUTSRC")
         PLUTPST=$(echo "$PLUTAPI" | jq -r '.posts')
         if [[ $PLUTPST -gt "0" ]]; then
@@ -46,7 +46,7 @@ if [[ "$PLUTNET" = "elma" ]]; then
         else
             echo "No result."
         fi
-    elif [[ "$PLUTOPT" = "check" ]] && [[ -n $PLUTSRC ]]; then
+    elif [[ "$PLUTOPT" = "check" ]] || [[ "$PLUTOPT" = "c" ]] && [[ -n $PLUTSRC ]]; then
         # Load a CSV list
         PLUTFIL=$PLUTSRC
         PLUTCHK=$(echo $PLUTFIL | grep csv)
@@ -65,6 +65,7 @@ if [[ "$PLUTNET" = "elma" ]]; then
                 else
                     echo "No idea..."
                 fi
+                sleep 0.5s
             done
         else
             echo "No csv found"
@@ -76,8 +77,9 @@ if [[ "$PLUTNET" = "elma" ]]; then
         echo "elma search Company Name"
         echo "elma check list.csv"
     fi
-elif [[ "$PLUTNET" = "dir" ]]; then
-    if [[ "$PLUTOPT" = "search" ]] && [[ -n $PLUTSRC ]]; then
+elif [[ "$PLUTNET" = "dir" ]] || [[ "$PLUTNET" = "d" ]]; then
+    # https://directory.peppol.eu/public/locale-en_US/menuitem-docs-rest-api
+    if [[ "$PLUTOPT" = "search" ]] || [[ "$PLUTOPT" = "s" ]] && [[ -n $PLUTSRC ]]; then
         PLUTCHK=$(echo $PLUTSRC | grep -E '^[0-9]{4}:[0-9]+$')
         if [[ -n $PLUTCHK ]]; then
             PLUTAPI=$(curl -s "https://directory.peppol.eu/search/1.0/json?participant=iso6523-actorid-upis::$PLUTSRC")
@@ -107,7 +109,7 @@ elif [[ "$PLUTNET" = "dir" ]]; then
                 echo "No result."
             fi
         fi
-    elif [[ "$PLUTOPT" = "check" ]] && [[ -n $PLUTSRC ]]; then
+    elif [[ "$PLUTOPT" = "check" ]] || [[ "$PLUTOPT" = "c" ]] && [[ -n $PLUTSRC ]]; then
         # Load a CSV list
         PLUTFIL=$PLUTSRC
         PLUTCHK=$(echo $PLUTFIL | grep csv)
@@ -126,6 +128,7 @@ elif [[ "$PLUTNET" = "dir" ]]; then
                 else
                     echo "No idea..."
                 fi
+                sleep 0.5s
             done
         else
             echo "No csv found"
