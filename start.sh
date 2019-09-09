@@ -1,20 +1,20 @@
 #!/bin/bash
-# plut v0.6
+# plut v0.7
 # Made by Dr. Waldijk
 # PEPPOL Look-Up Tool.
 # Read the README.md for more info.
 # By running this script you agree to the license terms.
 # Config ----------------------------------------------------------------------------
 PLUTNAM="plut"
-PLUTVER="0.6"
+PLUTVER="0.7"
 PLUTNET=$1
 PLUTOPT=$2
 PLUTSRC="$3 $4 $5 $6 $7 $8 $9"
 PLUTSRC=$(echo $PLUTSRC | sed -r 's/ /%20/g')
 # Functions -------------------------------------------------------------------------
-doctype () {
-    echo ""
-}
+#doctyp () {
+#    x
+#}
 # -----------------------------------------------------------------------------------
 if [[ "$PLUTNET" = "elma" ]] || [[ "$PLUTNET" = "e" ]]; then
     if [[ "$PLUTOPT" = "search" ]] || [[ "$PLUTOPT" = "s" ]] && [[ -n $PLUTSRC ]]; then
@@ -84,18 +84,28 @@ if [[ "$PLUTNET" = "elma" ]] || [[ "$PLUTNET" = "e" ]]; then
     fi
 elif [[ "$PLUTNET" = "helger" ]] || [[ "$PLUTNET" = "h" ]]; then
     # https://peppol.helger.com/public/locale-en_US/menuitem-tools-rest-api
-    # curl -s "https://peppol.helger.com/api/smpquery/digitprod/iso6523-actorid-upis::0192:962986633/busdox-docid-qns::urn:oasis:names:specification:ubl:schema:xsd:Invoice-2::Invoice%23%23urn:cen.eu:en16931:2017%23compliant%23urn:fdc:peppol.eu:2017:poacc:billing:3.0::2.1"
-    # Make # -> %23 in the url
-    # jq -r '.serviceinfo.processes[].endpoints[].serviceDescription'
-    # jq -r '.serviceinfo.processes[].endpoints[].technicalContactUrl'
     if [[ "$PLUTOPT" = "search" ]] || [[ "$PLUTOPT" = "s" ]] && [[ -n $PLUTSRC ]]; then
         PLUTCHK=$(echo $PLUTSRC | grep -E '^[0-9]{4}:.*$')
         if [[ -n $PLUTCHK ]]; then
             PLUTAPI=$(curl -s "https://peppol.helger.com/api/smpquery/digitprod/iso6523-actorid-upis::$PLUTSRC")
+            PLUTDAP=$PLUTAPI
             PLUTCHK=$(echo $PLUTAPI | grep -o 'HTTP Status 404' | head -n 1)
-            if [[ -z $PLUTCHK ]]; then
+            if [[ -z $PLUTCHK ]] && [[ -n $PLUTAPI ]]; then
                 echo "[PEPPOL @ Helger]"
-                echo $PLUTAPI | jq -r '.participantID' | sed -r 's/iso6523-actorid-upis::(.*)/     eID: \1/'
+                echo $PLUTAPI | jq -r '.participantID' | sed -r 's/iso6523-actorid-upis::(.*)/\1/'
+                PLUTCNT=0
+                while :; do
+                    PLUTCHK=$(echo $PLUTDAP | jq -r ".urls[$PLUTCNT].documentTypeID" | grep 'Invoice')
+                    PLUTCNT=$(expr $PLUTCNT + 1)
+                    if [[ -n $PLUTCHK ]]; then
+                        #echo ""
+                        break
+                    fi
+                done
+                PLUTDOC=$(echo $PLUTCHK | sed -r "s/#/%23/g")
+                PLUTDAP=$(curl -s "https://peppol.helger.com/api/smpquery/digitprod/iso6523-actorid-upis::$PLUTSRC/$PLUTDOC")
+                echo $PLUTDAP | jq -r '.serviceinfo.processes[].endpoints[].serviceDescription'
+                echo $PLUTDAP | jq -r '.serviceinfo.processes[].endpoints[].technicalContactUrl'
                 echo ""
                 PLUTCNT=0
                 while :; do
@@ -106,7 +116,7 @@ elif [[ "$PLUTNET" = "helger" ]] || [[ "$PLUTNET" = "h" ]]; then
                     if [[ "$PLUTCHK" != "null" ]] && [[ "$PLUTCNT" != "0" ]]; then
                         echo ""
                     fi
-                    echo $PLUTAPI | jq -r ".urls[$PLUTCNT].documentTypeID" | sed -r 's/(.*)/Document: \1/'
+                    echo $PLUTAPI | jq -r ".urls[$PLUTCNT].documentTypeID" | sed -r 's/(.*)/\1/'
                     PLUTCNT=$(expr $PLUTCNT + 1)
                 done
             else
