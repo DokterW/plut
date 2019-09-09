@@ -1,17 +1,20 @@
 #!/bin/bash
-# plut v0.4
+# plut v0.6
 # Made by Dr. Waldijk
 # PEPPOL Look-Up Tool.
 # Read the README.md for more info.
 # By running this script you agree to the license terms.
 # Config ----------------------------------------------------------------------------
 PLUTNAM="plut"
-PLUTVER="0.4"
+PLUTVER="0.6"
 PLUTNET=$1
 PLUTOPT=$2
 PLUTSRC="$3 $4 $5 $6 $7 $8 $9"
 PLUTSRC=$(echo $PLUTSRC | sed -r 's/ /%20/g')
 # Functions -------------------------------------------------------------------------
+doctype () {
+    echo ""
+}
 # -----------------------------------------------------------------------------------
 if [[ "$PLUTNET" = "elma" ]] || [[ "$PLUTNET" = "e" ]]; then
     if [[ "$PLUTOPT" = "search" ]] || [[ "$PLUTOPT" = "s" ]] && [[ -n $PLUTSRC ]]; then
@@ -20,6 +23,7 @@ if [[ "$PLUTNET" = "elma" ]] || [[ "$PLUTNET" = "e" ]]; then
         if [[ $PLUTPST -gt "0" ]]; then
             PLUTCNT=0
             PLUTPOS=0
+            echo "[ELMA]"
             until [[ "$PLUTCNT" = "$PLUTPST" ]]; do
                 PLUTCNT=$(expr $PLUTCNT + 1)
                 echo "$PLUTAPI" | jq -r ".entries[$PLUTPOS].name"
@@ -52,6 +56,7 @@ if [[ "$PLUTNET" = "elma" ]] || [[ "$PLUTNET" = "e" ]]; then
         PLUTCHK=$(echo $PLUTFIL | grep csv)
         PLUTCNT=0
         PLUTLIN=$(cat $PLUTFIL | tr ',' '\n' | wc -l)
+        echo "[ELMA]"
         if [[ -n "$PLUTCHK" ]]; then
             until [[ "$PLUTCNT" = "$PLUTLIN" ]]; do
                 PLUTCNT=$(expr $PLUTCNT + 1)
@@ -77,14 +82,52 @@ if [[ "$PLUTNET" = "elma" ]] || [[ "$PLUTNET" = "e" ]]; then
         echo "elma search Company Name"
         echo "elma check list.csv"
     fi
+elif [[ "$PLUTNET" = "helger" ]] || [[ "$PLUTNET" = "h" ]]; then
+    # https://peppol.helger.com/public/locale-en_US/menuitem-tools-rest-api
+    # curl -s "https://peppol.helger.com/api/smpquery/digitprod/iso6523-actorid-upis::0192:962986633/busdox-docid-qns::urn:oasis:names:specification:ubl:schema:xsd:Invoice-2::Invoice%23%23urn:cen.eu:en16931:2017%23compliant%23urn:fdc:peppol.eu:2017:poacc:billing:3.0::2.1"
+    # Make # -> %23 in the url
+    # jq -r '.serviceinfo.processes[].endpoints[].serviceDescription'
+    # jq -r '.serviceinfo.processes[].endpoints[].technicalContactUrl'
+    if [[ "$PLUTOPT" = "search" ]] || [[ "$PLUTOPT" = "s" ]] && [[ -n $PLUTSRC ]]; then
+        PLUTCHK=$(echo $PLUTSRC | grep -E '^[0-9]{4}:.*$')
+        if [[ -n $PLUTCHK ]]; then
+            PLUTAPI=$(curl -s "https://peppol.helger.com/api/smpquery/digitprod/iso6523-actorid-upis::$PLUTSRC")
+            PLUTCHK=$(echo $PLUTAPI | grep -o 'HTTP Status 404' | head -n 1)
+            if [[ -z $PLUTCHK ]]; then
+                echo "[PEPPOL @ Helger]"
+                echo $PLUTAPI | jq -r '.participantID' | sed -r 's/iso6523-actorid-upis::(.*)/     eID: \1/'
+                echo ""
+                PLUTCNT=0
+                while :; do
+                    PLUTCHK=$(echo $PLUTAPI | jq -r ".urls[$PLUTCNT].documentTypeID")
+                    if [[ "$PLUTCHK" = "null" ]]; then
+                        break
+                    fi
+                    if [[ "$PLUTCHK" != "null" ]] && [[ "$PLUTCNT" != "0" ]]; then
+                        echo ""
+                    fi
+                    echo $PLUTAPI | jq -r ".urls[$PLUTCNT].documentTypeID" | sed -r 's/(.*)/Document: \1/'
+                    PLUTCNT=$(expr $PLUTCNT + 1)
+                done
+            else
+                echo "No result."
+            fi
+        fi
+    else
+        echo "$PLUTNAM v$PLUTVER"
+        echo ""
+        echo "helger search 0192:987654321"
+        # echo "helger check list.csv"
+    fi
 elif [[ "$PLUTNET" = "dir" ]] || [[ "$PLUTNET" = "d" ]]; then
     # https://directory.peppol.eu/public/locale-en_US/menuitem-docs-rest-api
     if [[ "$PLUTOPT" = "search" ]] || [[ "$PLUTOPT" = "s" ]] && [[ -n $PLUTSRC ]]; then
-        PLUTCHK=$(echo $PLUTSRC | grep -E '^[0-9]{4}:[0-9]+$')
+        PLUTCHK=$(echo $PLUTSRC | grep -E '^[0-9]{4}:.*$')
         if [[ -n $PLUTCHK ]]; then
             PLUTAPI=$(curl -s "https://directory.peppol.eu/search/1.0/json?participant=iso6523-actorid-upis::$PLUTSRC")
             PLUTPST=$(echo "$PLUTAPI" | jq -r '."total-result-count"')
             if [[ $PLUTPST -gt "0" ]]; then
+                echo "[PEPPOL Directory]"
                 echo "$PLUTAPI" | jq -r '.matches[].entities[].name[].name'
                 echo "$PLUTAPI" | jq -r '.matches[].participantID.value'
             else
@@ -96,6 +139,7 @@ elif [[ "$PLUTNET" = "dir" ]] || [[ "$PLUTNET" = "d" ]]; then
             if [[ $PLUTPST -gt "0" ]]; then
                 PLUTCNT=0
                 PLUTPOS=0
+                echo "[PEPPOL Directory]"
                 until [[ "$PLUTCNT" = "$PLUTPST" ]]; do
                     PLUTCNT=$(expr $PLUTCNT + 1)
                     echo "$PLUTAPI" | jq -r ".matches[$PLUTPOS].entities[].name[].name"
@@ -116,6 +160,7 @@ elif [[ "$PLUTNET" = "dir" ]] || [[ "$PLUTNET" = "d" ]]; then
         PLUTCNT=0
         PLUTLIN=$(cat $PLUTFIL | tr ',' '\n' | wc -l)
         if [[ -n "$PLUTCHK" ]]; then
+            echo "[PEPPOL Directory]"
             until [[ "$PLUTCNT" = "$PLUTLIN" ]]; do
                 PLUTCNT=$(expr $PLUTCNT + 1)
                 PLUTSRC=$(cat $PLUTFIL | cut -d , -f $PLUTCNT)
@@ -144,5 +189,6 @@ else
     echo "$PLUTNAM v$PLUTVER"
     echo ""
     echo "elma"
+    echo "helger"
     echo "dir"
 fi
