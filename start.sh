@@ -1,12 +1,12 @@
 #!/bin/bash
-# plut v0.8
+# plut v0.9
 # Made by Dr. Waldijk
 # PEPPOL Look-Up Tool.
 # Read the README.md for more info.
 # By running this script you agree to the license terms.
 # Config ----------------------------------------------------------------------------
 PLUTNAM="plut"
-PLUTVER="0.8"
+PLUTVER="0.9"
 PLUTNET=$1
 PLUTOPT=$2
 PLUTSRC="$3 $4 $5 $6 $7 $8 $9"
@@ -118,7 +118,7 @@ elif [[ "$PLUTNET" = "helger" ]] || [[ "$PLUTNET" = "h" ]]; then
                         if [[ "$PLUTCHK" != "null" ]] && [[ "$PLUTCNT" != "0" ]]; then
                             echo ""
                         fi
-                        echo $PLUTAPI | jq -r ".urls[$PLUTCNT].documentTypeID" | sed -r 's/(.*)/\1/'
+                        echo $PLUTAPI | jq -r ".urls[$PLUTCNT].documentTypeID" | sed -r 's/busdox-docid-qns::(.*)/\1/'
                         PLUTCNT=$(expr $PLUTCNT + 1)
                     done
                 else
