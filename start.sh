@@ -89,9 +89,9 @@ elif [[ "$PLUTNET" = "helger" ]] || [[ "$PLUTNET" = "h" ]]; then
         if [[ -n $PLUTCHK ]]; then
             PLUTAPI=$(curl -s "https://peppol.helger.com/api/smpquery/digitprod/iso6523-actorid-upis::$PLUTSRC")
             PLUTDAP=$PLUTAPI
-            PLUTDOC=$(echo $PLUTDAP | jq -r '.urls[0].documentTypeID')
             PLUTCHK=$(echo $PLUTAPI | grep -o 'HTTP Status 404' | head -n 1)
             if [[ -z $PLUTCHK ]] && [[ -n $PLUTAPI ]]; then
+                PLUTDOC=$(echo $PLUTDAP | jq -r '.urls[0].documentTypeID')
                 echo "[PEPPOL @ Helger]"
                 echo $PLUTAPI | jq -r '.participantID' | sed -r 's/iso6523-actorid-upis::(.*)/\1/'
                 # PLUTCNT=0
