@@ -1,15 +1,48 @@
 #!/bin/bash
-# plut v0.10
+# plut v0.11
 # Made by Dr. Waldijk
 # PEPPOL Look-Up Tool.
 # Read the README.md for more info.
 # By running this script you agree to the license terms.
 # Config ----------------------------------------------------------------------------
 PLUTNAM="plut"
-PLUTVER="0.10"
+PLUTVER="0.11"
 PLUTOPT=$1
 PLUTSRC="$2 $3 $4 $5 $6 $7 $8 $9"
 PLUTSRC=$(echo $PLUTSRC | sed -r 's/ /%20/g')
+# Dependencies ----------------------------------------------------------------------
+if [ ! -e /usr/bin/curl ] && [ ! -e /usr/bin/jq ]; then
+    #FNUOSD=$(cat /etc/system-release | grep -oE '^[A-Z][a-z]+\s' | sed '1s/\s//')
+    FNUOSD=$(cat /etc/os-release | grep -oE '^ID=' | sed 's/ID=//')
+    if [[ "$FNUOSD" = "fedora" ]]; then
+        sudo dnf -y install curl jq fmt
+    elif [[ "$FNUOSD" = "ubuntu" ]]; then
+        sudo apt install curl jq
+    else
+        echo "You need to install curl and jq."
+        exit
+    fi
+elif [ ! -e /usr/bin/curl ]; then
+    FNUOSD=$(cat /etc/system-release | grep -oE '^[A-Z][a-z]+\s' | sed '1s/\s//')
+    if [ "$FNUOSD" = "Fedora" ]; then
+        sudo dnf -y install curl
+    elif [[ "$FNUOSD" = "ubuntu" ]]; then
+        sudo apt install curl
+    else
+        echo "You need to install curl."
+        exit
+    fi
+elif [ ! -e /usr/bin/jq ]; then
+    FNUOSD=$(cat /etc/system-release | grep -oE '^[A-Z][a-z]+\s' | sed '1s/\s//')
+    if [ "$FNUOSD" = "Fedora" ]; then
+        sudo dnf -y install jq
+    elif [[ "$FNUOSD" = "ubuntu" ]]; then
+        sudo apt install jq
+    else
+        echo "You need to install jq."
+        exit
+    fi
+fi
 # Functions -------------------------------------------------------------------------
 #doctyp () {
 #    x
@@ -29,17 +62,20 @@ if [[ "$PLUTOPT" = "search" ]] || [[ "$PLUTOPT" = "s" ]] && [[ -n $PLUTSRC ]]; t
                 PLUTDAP=$(curl -s "https://peppol.helger.com/api/smpquery/digitprod/iso6523-actorid-upis::$PLUTSRC/$PLUTDOC")
             fi
             # echo "[PEPPOL @ Helger]"
-#                PLUTCHK=$(echo "$PLUTSRC" | cut -d : -f 1)
-#                if [[ "$PLUTCHK" = "0192" ]] || [[ "$PLUTCHK" = "9908" ]]; then
-#                    PLUTNOR=$(echo "$PLUTSRC" | cut -d : -f 2)
-#                    PLUTELM=$(curl -s "https://hotell.difi.no/api/json/difi/elma/participants?query=$PLUTNOR")
-#                    echo "$PLUTELM" | jq -r ".entries[0].name" | sed -r 's/(.*)/   Company: \1/'
-#                else
-#                    PLUTDIR=$(curl -s "https://directory.peppol.eu/search/1.0/json?participant=iso6523-actorid-upis::$PLUTSRC")
-#                    echo "$PLUTDIR" | jq -r '.matches[].entities[].name[].name' | sed -r 's/(.*)/   Company: \1/'
-#                fi
-            echo $PLUTAPI | jq -r '.businessCard.entity[].name[].name' | sed -r 's/(.*)/   Company: \1/'
-            echo $PLUTAPI | jq -r '.businessCard.entity[].countrycode' | sed -r 's/(.*)/   Country: \1/'
+            #    PLUTCHK=$(echo "$PLUTSRC" | cut -d : -f 1)
+            #    if [[ "$PLUTCHK" = "0192" ]] || [[ "$PLUTCHK" = "9908" ]]; then
+            #        PLUTNOR=$(echo "$PLUTSRC" | cut -d : -f 2)
+            #        PLUTELM=$(curl -s "https://hotell.difi.no/api/json/difi/elma/participants?query=$PLUTNOR")
+            #        echo "$PLUTELM" | jq -r ".entries[0].name" | sed -r 's/(.*)/   Company: \1/'
+            #    else
+            #        PLUTDIR=$(curl -s "https://directory.peppol.eu/search/1.0/json?participant=iso6523-actorid-upis::$PLUTSRC")
+            #        echo "$PLUTDIR" | jq -r '.matches[].entities[].name[].name' | sed -r 's/(.*)/   Company: \1/'
+            #    fi
+            PLUTCHK=$(echo $PLUTAPI | jq -r '.businessCard.entity[].name[].name' | grep -o 'null' | head -n 1)
+            if [[ "$PLUTCHK" != "null" ]]; then
+                echo $PLUTAPI | jq -r '.businessCard.entity[].name[].name' | sed -r 's/(.*)/   Company: \1/'
+                echo $PLUTAPI | jq -r '.businessCard.entity[].countrycode' | sed -r 's/(.*)/   Country: \1/'
+            fi
             echo $PLUTAPI | jq -r '.participantID' | sed -r 's/iso6523-actorid-upis::(.*)/       eID: \1/'
             # PLUTCNT=0
             # while :; do
@@ -55,7 +91,7 @@ if [[ "$PLUTOPT" = "search" ]] || [[ "$PLUTOPT" = "s" ]] && [[ -n $PLUTSRC ]]; t
                 echo $PLUTDAP | jq -r '.serviceinfo.processes[].endpoints[0].technicalContactUrl' | sed -r 's/(.*)/AP Contact: \1/'
                 echo ""
                 PLUTCNT=0
-                echo "Documents:"
+                echo " Documents:"
                 while :; do
                     PLUTCHK=$(echo $PLUTAPI | jq -r ".urls[$PLUTCNT].documentTypeID")
                     if [[ "$PLUTCHK" = "null" ]]; then
@@ -81,7 +117,7 @@ elif [[ "$PLUTOPT" = "elma" ]] || [[ "$PLUTOPT" = "e" ]] && [[ -n $PLUTSRC ]]; t
     if [[ $PLUTPST -gt "0" ]]; then
         PLUTCNT=0
         PLUTPOS=0
-        echo "[ELMA]"
+        # echo "[ELMA]"
         until [[ "$PLUTCNT" = "$PLUTPST" ]]; do
             PLUTCNT=$(expr $PLUTCNT + 1)
             echo "$PLUTAPI" | jq -r ".entries[$PLUTPOS].name"
@@ -108,31 +144,6 @@ elif [[ "$PLUTOPT" = "elma" ]] || [[ "$PLUTOPT" = "e" ]] && [[ -n $PLUTSRC ]]; t
     else
         echo "No result."
     fi
-elif [[ "$PLUTOPT" = "elmac" ]] || [[ "$PLUTOPT" = "ec" ]] && [[ -n $PLUTSRC ]]; then
-    # Load a CSV list
-    PLUTFIL=$PLUTSRC
-    PLUTCHK=$(echo $PLUTFIL | grep csv)
-    PLUTCNT=0
-    PLUTLIN=$(cat $PLUTFIL | tr ',' '\n' | wc -l)
-    echo "[ELMA]"
-    if [[ -n "$PLUTCHK" ]]; then
-        until [[ "$PLUTCNT" = "$PLUTLIN" ]]; do
-            PLUTCNT=$(expr $PLUTCNT + 1)
-            PLUTSRC=$(cat $PLUTFIL | cut -d , -f $PLUTCNT)
-            PLUTAPI=$(curl -s "https://hotell.difi.no/api/json/difi/elma/participants?query=$PLUTSRC")
-            PLUTRST=$(echo "$PLUTAPI" | jq -r '.posts')
-            if [[ "$PLUTRST" = "0" ]]; then
-                echo "$PLUTSRC - Nope!"
-            elif [[ "$PLUTRST" != "0" ]]; then
-                echo "$PLUTSRC - Yup!"
-            else
-                echo "No idea..."
-            fi
-            sleep 0.5s
-        done
-    else
-        echo "No csv found"
-    fi
 elif [[ "$PLUTOPT" = "dir" ]] || [[ "$PLUTOPT" = "d" ]] && [[ -n $PLUTSRC ]]; then
     # https://directory.peppol.eu/public/locale-en_US/menuitem-docs-rest-api
     PLUTCHK=$(echo $PLUTSRC | grep -E '^[0-9]{4}:.*$')
@@ -140,7 +151,7 @@ elif [[ "$PLUTOPT" = "dir" ]] || [[ "$PLUTOPT" = "d" ]] && [[ -n $PLUTSRC ]]; th
         PLUTAPI=$(curl -s "https://directory.peppol.eu/search/1.0/json?participant=iso6523-actorid-upis::$PLUTSRC")
         PLUTPST=$(echo "$PLUTAPI" | jq -r '."total-result-count"')
         if [[ $PLUTPST -gt "0" ]]; then
-            echo "[PEPPOL Directory]"
+            # echo "[PEPPOL Directory]"
             echo "$PLUTAPI" | jq -r '.matches[].entities[].name[].name'
             echo "$PLUTAPI" | jq -r '.matches[].participantID.value'
         else
@@ -152,7 +163,7 @@ elif [[ "$PLUTOPT" = "dir" ]] || [[ "$PLUTOPT" = "d" ]] && [[ -n $PLUTSRC ]]; th
         if [[ $PLUTPST -gt "0" ]]; then
             PLUTCNT=0
             PLUTPOS=0
-            echo "[PEPPOL Directory]"
+            # echo "[PEPPOL Directory]"
             until [[ "$PLUTCNT" = "$PLUTPST" ]]; do
                 PLUTCNT=$(expr $PLUTCNT + 1)
                 echo "$PLUTAPI" | jq -r ".matches[$PLUTPOS].entities[].name[].name"
@@ -165,31 +176,6 @@ elif [[ "$PLUTOPT" = "dir" ]] || [[ "$PLUTOPT" = "d" ]] && [[ -n $PLUTSRC ]]; th
         else
             echo "No result."
         fi
-    fi
-elif [[ "$PLUTOPT" = "dirc" ]] || [[ "$PLUTOPT" = "dc" ]] && [[ -n $PLUTSRC ]]; then
-    # Load a CSV list
-    PLUTFIL=$PLUTSRC
-    PLUTCHK=$(echo $PLUTFIL | grep csv)
-    PLUTCNT=0
-    PLUTLIN=$(cat $PLUTFIL | tr ',' '\n' | wc -l)
-    if [[ -n "$PLUTCHK" ]]; then
-        echo "[PEPPOL Directory]"
-        until [[ "$PLUTCNT" = "$PLUTLIN" ]]; do
-            PLUTCNT=$(expr $PLUTCNT + 1)
-            PLUTSRC=$(cat $PLUTFIL | cut -d , -f $PLUTCNT)
-            PLUTAPI=$(curl -s "https://directory.peppol.eu/search/1.0/json?participant=iso6523-actorid-upis::$PLUTSRC")
-            PLUTRST=$(echo "$PLUTAPI" | jq -r '."total-result-count"')
-            if [[ "$PLUTRST" = "0" ]]; then
-                echo "$PLUTSRC - Nope!"
-            elif [[ "$PLUTRST" != "0" ]]; then
-                echo "$PLUTSRC - Yup!"
-            else
-                echo "No idea..."
-            fi
-            sleep 0.5s
-        done
-    else
-        echo "No csv found"
     fi
 else
     echo "$PLUTNAM v$PLUTVER"
