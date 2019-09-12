@@ -5,7 +5,7 @@ Thanks to [Philip Helger](https://peppol.helger.com/public/menuitem-tools-rest-a
 I have used a variety of tools do to participant lookups, but they either provided too much info or not enough. At least for me this bash script makes my job a lot easier.
 
 ### Install
-```wget https://github.com/DokterW/plut/blob/master/plut.sh```
+```wget https://raw.githubusercontent.com/DokterW/plut/master/plut.sh```
 
 ```chmod +x plut.sh```
 
