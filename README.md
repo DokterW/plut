@@ -12,11 +12,11 @@ I have used a variety of tools do to participant lookups, but they either provid
 ```./plut.sh```
 
 ### Usage
-Search using API @ [Helger](https://peppol.helger.com/public/menuitem-tools-rest-api): ```./plut.sh search 0192:987654321```
+Search using API @ [Helger](https://peppol.helger.com/public/menuitem-tools-rest-api): ```./plut.sh search 0192:987654321``` or ```./plut.sh s 0192:987654321```
 
-Search the ELMA directory (Norwegian participants only): ```./plut.sh search 987654321``` or ```./plut.sh search Company Name```
+Search the ELMA directory (Norwegian participants only): ```./plut.sh elma 987654321``` or ```./plut.sh elma Company Name```
 
-Search PEPPOL Directory: ```./plut.sh search 0192:987654321``` or ```./plut.sh search Company Name```
+Search PEPPOL Directory: ```./plut.sh dir 0192:987654321``` or ```./plut.sh dir Company Name```
 
 ### Roadmap
 * Keep tweaking the code.
